@@ -15,6 +15,10 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.compose.Polygon
 import androidx.compose.ui.graphics.Color
+import com.google.android.gms.maps.model.Dash
+import com.google.android.gms.maps.model.Gap
+import com.google.android.gms.maps.model.JointType
+import com.google.android.gms.maps.model.RoundCap
 import com.google.maps.android.compose.Polyline
 
 @Composable
@@ -70,9 +74,13 @@ fun MapScreen() {
             }
 
             Polyline(
-                points = listOf(plazaDeArmas[0], parqueLambramani[0], mallAventura[0]),
-                color = Color.Magenta,
-                width = 8f
+                points = locations,
+                color = Color(0xFF1B5E20),
+                width = 10f,
+                pattern = listOf(Dash(30f), Gap(20f)),
+                startCap = RoundCap(),
+                endCap = RoundCap(),
+                jointType = JointType.ROUND
             )
 
             locations.forEach { location ->
