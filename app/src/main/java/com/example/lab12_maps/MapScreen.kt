@@ -74,13 +74,10 @@ fun MapScreen() {
             }
 
             Polyline(
-                points = locations,
-                color = Color(0xFF1B5E20),
-                width = 10f,
-                pattern = listOf(Dash(30f), Gap(20f)),
-                startCap = RoundCap(),
-                endCap = RoundCap(),
-                jointType = JointType.ROUND
+                points = listOf(arequipa, LatLng(-12.0464, -77.0428)),
+                color = Color.Red,
+                width = 6f,
+                geodesic = true
             )
 
             locations.forEach { location ->
