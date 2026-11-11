@@ -15,6 +15,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.compose.Polygon
 import androidx.compose.ui.graphics.Color
+import com.google.maps.android.compose.Polyline
 
 @Composable
 fun MapScreen() {
@@ -67,6 +68,13 @@ fun MapScreen() {
                     strokeWidth = 5f
                 )
             }
+
+            Polyline(
+                points = listOf(plazaDeArmas[0], parqueLambramani[0], mallAventura[0]),
+                color = Color.Magenta,
+                width = 8f
+            )
+
             locations.forEach { location ->
                 Marker(
                     state = rememberMarkerState(position = location),
