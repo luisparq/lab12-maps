@@ -1,5 +1,10 @@
 package com.example.lab12_maps
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -12,11 +17,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -28,14 +38,20 @@ import com.google.android.gms.maps.model.RoundCap
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
+import kotlinx.coroutines.launch
 
+@SuppressLint("MissingPermission")
 @Composable
 fun MapScreen() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val arequipa = LatLng(-16.4040102, -71.559611)
     val lima = LatLng(-12.0464, -77.0428)
 
@@ -43,6 +59,44 @@ fun MapScreen() {
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
     // Polilínea clickeable
     var rutaSeleccionada by remember { mutableStateOf(false) }
+
+    // Ejercicio 2: ubicación actual
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(arequipa, 12f)
+    }
+
+    fun goToMyLocation() {
+        fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+            .addOnSuccessListener { location ->
+                location?.let {
+                    scope.launch {
+                        cameraPositionState.animate(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(it.latitude, it.longitude), 16f
+                            ),
+                            1500
+                        )
+                    }
+                }
+            }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        hasPermission = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (hasPermission) goToMyLocation()
+    }
 
     val locations = listOf(
         LatLng(-16.433415, -71.5442652),  // JLByR
@@ -62,10 +116,6 @@ fun MapScreen() {
         LatLng(-16.433013, -71.509310), LatLng(-16.432566, -71.508853)
     )
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(arequipa, 12f)
-    }
-
     LaunchedEffect(Unit) {
         cameraPositionState.animate(
             update = CameraUpdateFactory.newLatLngZoom(LatLng(-16.2520984, -71.6836503), 12f),
@@ -77,7 +127,11 @@ fun MapScreen() {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(mapType = mapType)
+            properties = MapProperties(
+                mapType = mapType,
+                isMyLocationEnabled = hasPermission
+            ),
+            uiSettings = MapUiSettings(zoomControlsEnabled = true)
         ) {
             Marker(
                 state = rememberMarkerState(position = arequipa),
@@ -102,7 +156,6 @@ fun MapScreen() {
                 )
             }
 
-            // Polilínea 1: punteada con extremos redondeados
             Polyline(
                 points = locations,
                 color = Color(0xFF1B5E20),
@@ -113,7 +166,6 @@ fun MapScreen() {
                 jointType = JointType.ROUND
             )
 
-            // Polilínea 2: geodésica Arequipa - Lima
             Polyline(
                 points = listOf(arequipa, lima),
                 color = Color.Red,
@@ -121,7 +173,6 @@ fun MapScreen() {
                 geodesic = true
             )
 
-            // Polilínea 3: clickeable, cambia de color
             Polyline(
                 points = listOf(plazaDeArmas[0], parqueLambramani[0], mallAventura[0]),
                 color = if (rutaSeleccionada) Color.Green else Color.Magenta,
@@ -131,7 +182,6 @@ fun MapScreen() {
             )
         }
 
-        // Botones para cambiar el tipo de mapa
         Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -143,5 +193,23 @@ fun MapScreen() {
             Button(onClick = { mapType = MapType.HYBRID }) { Text("Híbrido") }
             Button(onClick = { mapType = MapType.TERRAIN }) { Text("Relieve") }
         }
+
+        Button(
+            onClick = {
+                if (hasPermission) {
+                    goToMyLocation()
+                } else {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+        ) { Text("Mi ubicación") }
     }
 }
