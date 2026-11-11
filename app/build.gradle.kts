@@ -52,4 +52,9 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    implementation("com.google.maps.android:maps-compose-utils:4.4.1")
+    implementation("com.google.maps.android:maps-compose-widgets:4.4.1")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
 }
