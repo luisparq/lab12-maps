@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -24,6 +26,9 @@ import com.google.maps.android.compose.Polyline
 @Composable
 fun MapScreen() {
     val arequipa = LatLng(-16.4040102, -71.559611)
+
+    var rutaSeleccionada by remember { mutableStateOf(false) }
+
     val locations = listOf(
         LatLng(-16.433415, -71.5442652),  // JLByR
         LatLng(-16.4205151, -71.4945209), // Paucarpata
@@ -45,6 +50,7 @@ fun MapScreen() {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(arequipa, 12f)
     }
+
 
     LaunchedEffect(Unit) {
         cameraPositionState.animate(
@@ -74,10 +80,11 @@ fun MapScreen() {
             }
 
             Polyline(
-                points = listOf(arequipa, LatLng(-12.0464, -77.0428)),
-                color = Color.Red,
-                width = 6f,
-                geodesic = true
+                points = listOf(plazaDeArmas[0], parqueLambramani[0], mallAventura[0]),
+                color = if (rutaSeleccionada) Color.Green else Color.Magenta,
+                width = 12f,
+                clickable = true,
+                onClick = { rutaSeleccionada = !rutaSeleccionada }
             )
 
             locations.forEach { location ->
